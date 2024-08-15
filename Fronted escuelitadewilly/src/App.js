@@ -18,7 +18,7 @@ function App() {
             contraseña
         })
         .then(response => {
-            console.log('Login exitoso:', response.data);
+            console.log('Ingreso exitoso:', response.data);
             // Aquí puedes redirigir al usuario o guardar el estado de autenticación
         })
         .catch(error => {
