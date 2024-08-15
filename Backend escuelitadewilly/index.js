@@ -1,11 +1,16 @@
 const express = require('express');
 const mysql = require('mysql2');
-const bcrypt = require('bcrypt');  // Para comparar contraseñas hasheadas
+const bcrypt = require('bcrypt');  // bcryptjs si tuviste problemas con bcrypt
+const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const { body, validationResult } = require('express-validator');
 const cors = require('cors');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(helmet());  // Añadir encabezados HTTP seguros
 
 // Configurar la conexión a la base de datos
 const db = mysql.createConnection({
@@ -23,8 +28,39 @@ db.connect(err => {
     console.log('Connected to MySQL!');
 });
 
-// Ruta para manejar el login
-app.post('/api/login', (req, res) => {
+// Limitar el número de intentos de login
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 5, // Limita cada IP a 5 solicitudes por "windowMs"
+    message: "Demasiados intentos de login, por favor intenta de nuevo después de 15 minutos."
+});
+
+// Middleware para verificar JWT y proteger rutas
+const verifyToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) return res.status(401).json({ message: 'Acceso denegado, se requiere un token.' });
+
+    jwt.verify(token, 'your_jwt_secret', (err, decoded) => {
+        if (err) return res.status(403).json({ message: 'Token inválido.' });
+        
+        req.userId = decoded.id;
+        req.userRole = decoded.rol;
+        next();
+    });
+};
+
+// Ruta de login
+app.post('/api/login', loginLimiter, [
+    body('rut').isLength({ min: 7, max: 12 }).trim().escape(),
+    body('contraseña').isLength({ min: 5 }).escape()
+], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const { rut, contraseña } = req.body;
 
     const sql = 'SELECT * FROM usuarios WHERE rut = ?';
@@ -40,17 +76,47 @@ app.post('/api/login', (req, res) => {
         bcrypt.compare(contraseña, user.contraseña, (err, isMatch) => {
             if (err) return res.status(500).send(err);
             if (!isMatch) {
-                return res.status(401).json({ message: 'Contraseña incorrecta, contactarse con administrador' });
+                return res.status(401).json({ message: 'Contraseña incorrecta' });
             }
 
-            // Aquí puedes generar un token JWT o simplemente devolver un éxito
-            res.json({ message: 'Login exitoso', user });
+            // Genera un token JWT
+            const token = jwt.sign(
+                { id: user.id, rol: user.rol },
+                'your_jwt_secret', // Cambia esto por un secreto más seguro
+                { expiresIn: '1h' }
+            );
+
+            res.json({ message: 'Login exitoso', token, rol: user.rol });
         });
     });
+});
+
+// Rutas protegidas según el rol del usuario
+app.get('/api/estudiante', verifyToken, (req, res) => {
+    if (req.userRole === 'Estudiante') {
+        res.json({ message: 'Bienvenido Estudiante' });
+    } else {
+        res.status(403).json({ message: 'No tienes acceso a esta ruta' });
+    }
+});
+
+app.get('/api/profesor', verifyToken, (req, res) => {
+    if (req.userRole === 'Profesor') {
+        res.json({ message: 'Bienvenido Profesor' });
+    } else {
+        res.status(403).json({ message: 'No tienes acceso a esta ruta' });
+    }
+});
+
+app.get('/api/administrador', verifyToken, (req, res) => {
+    if (req.userRole === 'Administrador') {
+        res.json({ message: 'Bienvenido Administrador' });
+    } else {
+        res.status(403).json({ message: 'No tienes acceso a esta ruta' });
+    }
 });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
-

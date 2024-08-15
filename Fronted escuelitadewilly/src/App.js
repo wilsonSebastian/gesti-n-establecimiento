@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom'; // Importa useNavigate
 import logoCMI from './escuela.jpg';
-import logoEduprotic from './escuela.jpg';
+import Estudiante from './Estudiante';
+import Profesor from './Profesor';
+import Administrador from './Administrador';
 import './App.css';
 
 function App() {
     const [rut, setRut] = useState('');
     const [contraseña, setContraseña] = useState('');
     const [error, setError] = useState('');
+    const navigate = useNavigate(); // Mueve useNavigate dentro del componente App
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -18,8 +22,17 @@ function App() {
             contraseña
         })
         .then(response => {
-            console.log('Ingreso exitoso:', response.data);
-            // Aquí puedes redirigir al usuario o guardar el estado de autenticación
+            const { token, rol } = response.data;
+            localStorage.setItem('token', token);
+
+            // Redirigir basado en el rol del usuario
+            if (rol === 'Estudiante') {
+                navigate('/estudiante');
+            } else if (rol === 'Profesor') {
+                navigate('/profesor');
+            } else if (rol === 'Administrador') {
+                navigate('/administrador');
+            }
         })
         .catch(error => {
             console.error('Hubo un error en el login:', error);
@@ -33,7 +46,7 @@ function App() {
             <div className="login-container">
                 <div className="login-box">
                     <img src={logoCMI} alt="CMI Logo" className="logo" />
-                    <h2>Bienvenido liceo digital</h2>
+                    <h2>Bienvenido al libro de clases</h2>
                     {error && <p className="error">{error}</p>}
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
@@ -60,10 +73,17 @@ function App() {
                     <div className="footer-links">
                         <a href="#">Recuperar clave</a>
                         <a href="#">Contacto</a>
-            
+                        <a href="#">Verificar documento</a>
                     </div>
                 </div>
             </div>
+
+            {/* Rutas para cada rol */}
+            <Routes>
+                <Route path="/estudiante" element={<Estudiante />} />
+                <Route path="/profesor" element={<Profesor />} />
+                <Route path="/administrador" element={<Administrador />} />
+            </Routes>
         </div>
     );
 }
