@@ -1,0 +1,82 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('classroom-2093744_1280.jpg') no-repeat center center fixed;
+  background-size: cover;
+  filter: blur(10px); /* Aplica el desenfoque a la imagen de fondo */
+  z-index: -1; /* Asegura que el fondo esté detrás del contenido */
+}
+
+.login-container {
+  position: relative;
+  z-index: 1;
+}
+
+.login-box {
+  background: rgba(255, 255, 255, 0.8);
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 400px; /* Fija un ancho máximo para el formulario */
+  margin: auto; /* Centra horizontalmente */
+}
+
+.logo, .eduprotic-logo {
+  width: 60px;
+  height: 60px;
+  background-color: #3498db;
+  border-radius:80%;
+  opacity: 0.7;
+}
+
+.form-group {
+  margin-bottom: 15px;
+  text-align: left; /* Asegura que los inputs y etiquetas estén alineados a la izquierda */
+}
+
+input[type="text"], input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  box-sizing: border-box; /* Asegura que el padding no altere el tamaño total del input */
+}
+
+.btn {
+  padding: 10px 20px;
+  background-color: #1E90FF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.footer-links {
+  text-align: center; /* Alinea el contenido del pie de página en el centro */
+}
+
+.footer-links a {
+  color: #1E90FF;
+  margin: 10px;
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  text-decoration: underline;
+}
