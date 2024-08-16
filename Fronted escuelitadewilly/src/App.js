@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { BrowserRouter as Router, Route, Routes, useNavigate, Link } from 'react-router-dom'; 
+import axios from 'axios';
 import logoCMI from './escuela.jpg';
 import Estudiante from './Estudiante';
 import Profesor from './Profesor';
 import Administrador from './Administrador';
-import Registro from './Registro';  // Importa el componente de Registro
+import Registro from './Registro'; 
 import './App.css';
 
-function App() {
+function Login() {
     const [rut, setRut] = useState('');
     const [contraseña, setContraseña] = useState('');
     const [error, setError] = useState('');
@@ -17,10 +17,7 @@ function App() {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        axios.post('http://localhost:5000/api/login', {
-            rut,
-            contraseña
-        })
+        axios.post('http://localhost:5000/api/login', { rut, contraseña })
         .then(response => {
             const { token, rol } = response.data;
             localStorage.setItem('token', token);
@@ -40,55 +37,61 @@ function App() {
     };
 
     return (
-        <div className="App">
-            <div className="background"></div>
-            <div className="login-container">
-                <div className="login-box">
-                    <img src={logoCMI} alt="CMI Logo" className="logo" />
-                    <h2>Bienvenido al libro de clases</h2>
-                    {error && <p className="error">{error}</p>}
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <input
-                                type="text"
-                                placeholder="RUT"
-                                value={rut}
-                                onChange={(e) => setRut(e.target.value)}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <input
-                                type="password"
-                                placeholder="Contraseña"
-                                value={contraseña}
-                                onChange={(e) => setContraseña(e.target.value)}
-                            />
-                        </div>
-                        <div className="form-group remember">
-                            <input type="checkbox" /> <label>Recordar datos</label>
-                        </div>
-                        <button type="submit" className="btn">Entrar</button>
-                    </form>
-                    <div className="footer-links">
-                        <a href="#">Recuperar clave</a>
-                        <a href="#">Contacto</a>
-                        <a href="#">Verificar documento</a>
+        <div className="login-container">
+            <div className="login-box">
+                <img src={logoCMI} alt="CMI Logo" className="logo" />
+                <h2>Bienvenido al libro de clases</h2>
+                {error && <p className="error">{error}</p>}
+                <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <input
+                            type="text"
+                            placeholder="RUT"
+                            value={rut}
+                            onChange={(e) => setRut(e.target.value)}
+                        />
                     </div>
-                    <div className="register-link">
-                        <Link to="/registro">Registrar Usuario</Link> {/* Botón que lleva a la página de registro */}
+                    <div className="form-group">
+                        <input
+                            type="password"
+                            placeholder="Contraseña"
+                            value={contraseña}
+                            onChange={(e) => setContraseña(e.target.value)}
+                        />
                     </div>
+                    <div className="form-group remember">
+                        <input type="checkbox" /> <label>Recordar datos</label>
+                    </div>
+                    <button type="submit" className="btn">Entrar</button>
+                </form>
+                <div className="footer-links">
+                    <a href="#">Recuperar clave</a>
+                    <a href="#">Contacto</a>
+                    <a href="#">Verificar documento</a>
+                </div>
+                <div className="register-link">
+                    <Link to="/registro">Registrar Usuario</Link> {/* Botón para ir a la página de registro */}
                 </div>
             </div>
-
-            {/* Rutas para cada rol */}
-            <Routes>
-                <Route path="/estudiante" element={<Estudiante />} />
-                <Route path="/profesor" element={<Profesor />} />
-                <Route path="/administrador" element={<Administrador />} />
-                <Route path="/registro" element={<Registro />} /> {/* Ruta para el registro */}
-            </Routes>
         </div>
     );
 }
 
+function App() {
+    return (
+        <Router> {/* Este debe ser el único Router en la aplicación */}
+            <div className="App">
+                <Routes>
+                    <Route path="/" element={<Login />} />
+                    <Route path="/registro" element={<Registro />} />
+                    <Route path="/estudiante" element={<Estudiante />} />
+                    <Route path="/profesor" element={<Profesor />} />
+                    <Route path="/administrador" element={<Administrador />} />
+                </Routes>
+            </div>
+        </Router>
+    );
+}
+
 export default App;
+
