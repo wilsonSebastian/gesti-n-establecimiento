@@ -1,16 +1,23 @@
-
-// src/components/Administrador.js
 import React from 'react';
-import LogoutButton from './LogoutButton';
+import { useNavigate } from 'react-router-dom';
+import './App.css';
 
 function Administrador() {
-  return (
-    <div>
-      <h1>Bienvenido Administrador</h1>
-      <LogoutButton />
-      <p>Esta es tu vista específica.</p>
-    </div>
-  );
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        navigate('/', { replace: true });
+    };
+
+    return (
+        <div className="dashboard">
+            <h2>Bienvenido, Administrador</h2>
+            <button className="logout-btn" onClick={handleLogout}>
+                Cerrar Sesión
+            </button>
+        </div>
+    );
 }
 
 export default Administrador;

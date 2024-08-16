@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, useNavigate, Link } from 'react-router-dom'; 
 import axios from 'axios';
 import logoCMI from './escuela.jpg';
-import Estudiante from './Estudiante';
-import Profesor from './Profesor';
-import Administrador from './Administrador';
-import Registro from './Registro'; 
+import Dashboard from './Dashboard';
+import AdminUsuarios from './AdminUsuarios';
 import './App.css';
 
-function Login() {
+
+function Login({ setUser }) {
     const [rut, setRut] = useState('');
     const [contraseña, setContraseña] = useState('');
     const [error, setError] = useState('');
@@ -16,24 +15,26 @@ function Login() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
         axios.post('http://localhost:5000/api/login', { rut, contraseña })
-        .then(response => {
-            const { token, rol } = response.data;
-            localStorage.setItem('token', token);
+            .then(response => {
+                const { token, rol } = response.data;
+                localStorage.setItem('token', token);
+                localStorage.setItem('role', rol); // Almacenar el rol en localStorage
 
-            if (rol === 'Estudiante') {
-                navigate('/estudiante');
-            } else if (rol === 'Profesor') {
-                navigate('/profesor');
-            } else if (rol === 'Administrador') {
-                navigate('/administrador');
-            }
-        })
-        .catch(error => {
-            console.error('Hubo un error en el login:', error);
-            setError('RUT o contraseña incorrectos.');
-        });
+                setUser({ name: 'Usuario', role: rol });
+
+                if (rol === 'Estudiante') {
+                    navigate('/estudiante', { replace: true });
+                } else if (rol === 'Profesor') {
+                    navigate('/profesor', { replace: true });
+                } else if (rol === 'Administrador') {
+                    navigate('/administrador', { replace: true });
+                }
+            })
+            .catch(error => {
+                console.error('Hubo un error en el login:', error);
+                setError('RUT o contraseña incorrectos.');
+            });
     };
 
     return (
@@ -70,7 +71,7 @@ function Login() {
                     <a href="#">Verificar documento</a>
                 </div>
                 <div className="register-link">
-                    <Link to="/registro">Registrar Usuario</Link> {/* Botón para ir a la página de registro */}
+                    <Link to="/registro">Registrar Usuario</Link> 
                 </div>
             </div>
         </div>
@@ -78,18 +79,38 @@ function Login() {
 }
 
 function App() {
+    const [user, setUser] = useState(null);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const userRole = localStorage.getItem('role'); // Obtener el rol almacenado
+
+        if (token && userRole) {
+            setUser({ name: 'Usuario', role: userRole }); // Establecer la información del usuario
+            if (userRole === 'Estudiante') {
+                navigate('/estudiante');
+            } else if (userRole === 'Profesor') {
+                navigate('/profesor');
+            } else if (userRole === 'Administrador') {
+                navigate('/administrador');
+            }
+        } else {
+            navigate('/');
+        }
+    }, [navigate]);
+
     return (
-        <div className="App">
-            <Routes>
-                <Route path="/" element={<Login />} />
-                <Route path="/registro" element={<Registro />} />
-                <Route path="/estudiante" element={<Estudiante />} />
-                <Route path="/profesor" element={<Profesor />} />
-                <Route path="/administrador" element={<Administrador />} />
-            </Routes>
-        </div>
+        <Routes>
+            <Route path="/" element={<Login setUser={setUser} />} />
+            <Route path="/estudiante" element={<Dashboard user={user} />} />
+            <Route path="/profesor" element={<Dashboard user={user} />} />
+            <Route path="/administrador" element={<Dashboard user={user} />} />
+            <Route path="/admin/usuarios" element={<AdminUsuarios />} />
+        </Routes>
     );
 }
+
 
 export default App;
 

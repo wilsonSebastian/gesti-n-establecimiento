@@ -1,0 +1,27 @@
+.admin-usuarios {
+    padding: 20px;
+}
+
+.admin-usuarios table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-usuarios th, .admin-usuarios td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.admin-usuarios th {
+    background-color: #f2f2f2;
+}
+
+.admin-usuarios button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin-right: 5px;
+}
