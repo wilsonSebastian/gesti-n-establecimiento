@@ -79,17 +79,15 @@ function Login() {
 
 function App() {
     return (
-        <Router> {/* Este debe ser el único Router en la aplicación */}
-            <div className="App">
-                <Routes>
-                    <Route path="/" element={<Login />} />
-                    <Route path="/registro" element={<Registro />} />
-                    <Route path="/estudiante" element={<Estudiante />} />
-                    <Route path="/profesor" element={<Profesor />} />
-                    <Route path="/administrador" element={<Administrador />} />
-                </Routes>
-            </div>
-        </Router>
+        <div className="App">
+            <Routes>
+                <Route path="/" element={<Login />} />
+                <Route path="/registro" element={<Registro />} />
+                <Route path="/estudiante" element={<Estudiante />} />
+                <Route path="/profesor" element={<Profesor />} />
+                <Route path="/administrador" element={<Administrador />} />
+            </Routes>
+        </div>
     );
 }
 
