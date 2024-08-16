@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom'; // Importa useNavigate
+import { BrowserRouter as Router, Route, Routes, useNavigate, Link } from 'react-router-dom'; 
 import logoCMI from './escuela.jpg';
 import Estudiante from './Estudiante';
 import Profesor from './Profesor';
 import Administrador from './Administrador';
+import Registro from './Registro';  // Importa el componente de Registro
 import './App.css';
 
 function App() {
     const [rut, setRut] = useState('');
     const [contraseña, setContraseña] = useState('');
     const [error, setError] = useState('');
-    const navigate = useNavigate(); // Mueve useNavigate dentro del componente App
+    const navigate = useNavigate();
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Enviar los datos al backend
         axios.post('http://localhost:5000/api/login', {
             rut,
             contraseña
@@ -25,7 +25,6 @@ function App() {
             const { token, rol } = response.data;
             localStorage.setItem('token', token);
 
-            // Redirigir basado en el rol del usuario
             if (rol === 'Estudiante') {
                 navigate('/estudiante');
             } else if (rol === 'Profesor') {
@@ -75,6 +74,9 @@ function App() {
                         <a href="#">Contacto</a>
                         <a href="#">Verificar documento</a>
                     </div>
+                    <div className="register-link">
+                        <Link to="/registro">Registrar Usuario</Link> {/* Botón que lleva a la página de registro */}
+                    </div>
                 </div>
             </div>
 
@@ -83,6 +85,7 @@ function App() {
                 <Route path="/estudiante" element={<Estudiante />} />
                 <Route path="/profesor" element={<Profesor />} />
                 <Route path="/administrador" element={<Administrador />} />
+                <Route path="/registro" element={<Registro />} /> {/* Ruta para el registro */}
             </Routes>
         </div>
     );
