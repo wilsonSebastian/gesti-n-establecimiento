@@ -12,7 +12,7 @@ function Administrador() {
 
     return (
         <div className="dashboard">
-            <h2>Bienvenido, Administrador</h2>
+            <h2>Bienvenido, Admin</h2>
             <button className="logout-btn" onClick={handleLogout}>
                 Cerrar Sesión
             </button>

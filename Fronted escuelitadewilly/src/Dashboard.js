@@ -1,26 +1,16 @@
 import React from 'react';
-import Sidebar from './Sidebar'; // Sidebar plegable que muestra nombre y opciones
+import Sidebar from './Sidebar';
 
 function Dashboard({ user }) {
     if (!user) {
-        return null; // Evitar el renderizado si no hay usuario
+        return null;
     }
 
     return (
         <div className="dashboard-container">
             <Sidebar user={user} />
             <div className="content">
-                {/* Contenido del dashboard según el rol del usuario */}
-                <h1>Bienvenido, {user.role}</h1>
-                {user.role === 'Administrador' && (
-                    <div>
-                        <h2>Administrar Usuarios</h2>
-                        {
-                        /* Aquí se incluiría la lógica para CRUD de usuarios */
-                        <a href="/AdminUsuarios">Recuperar clave</a>
-                        }
-                    </div>
-                )}
+                <h1>Bienvenido, {user.name}</h1>
             </div>
         </div>
     );

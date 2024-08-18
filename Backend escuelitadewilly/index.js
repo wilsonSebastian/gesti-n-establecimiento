@@ -31,7 +31,7 @@ db.connect(err => {
 // Limitar el número de intentos de login
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 5, // Limita cada IP a 5 solicitudes por "windowMs"
+    max: 99, // Limita cada IP a 99 solicitudes por "windowMs"
     message: "Demasiados intentos de login, por favor intenta de nuevo después de 15 minutos."
 });
 
@@ -40,11 +40,17 @@ const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) return res.status(401).json({ message: 'Acceso denegado, se requiere un token.' });
+    if (!token) {
+        console.log('Token no proporcionado');
+        return res.status(401).json({ message: 'Acceso denegado, se requiere un token.' });
+    }
 
     jwt.verify(token, 'your_jwt_secret', (err, decoded) => {
-        if (err) return res.status(403).json({ message: 'Token inválido.' });
-        
+        if (err) {
+            console.log('Token inválido:', err);
+            return res.status(403).json({ message: 'Token inválido.' });
+        }
+
         req.userId = decoded.id;
         req.userRole = decoded.rol;
         next();
@@ -58,6 +64,7 @@ app.post('/api/login', loginLimiter, [
 ], (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+        console.log('Errores de validación en login:', errors.array());
         return res.status(400).json({ errors: errors.array() });
     }
 
@@ -65,8 +72,12 @@ app.post('/api/login', loginLimiter, [
 
     const sql = 'SELECT * FROM usuarios WHERE rut = ?';
     db.query(sql, [rut], (err, results) => {
-        if (err) return res.status(500).send(err);
+        if (err) {
+            console.log('Error al buscar usuario:', err);
+            return res.status(500).send(err);
+        }
         if (results.length === 0) {
+            console.log('Usuario no encontrado:', rut);
             return res.status(401).json({ message: 'Usuario no encontrado' });
         }
 
@@ -74,8 +85,12 @@ app.post('/api/login', loginLimiter, [
 
         // Compara la contraseña proporcionada con la almacenada en la base de datos
         bcrypt.compare(contraseña, user.contraseña, (err, isMatch) => {
-            if (err) return res.status(500).send(err);
+            if (err) {
+                console.log('Error al comparar contraseñas:', err);
+                return res.status(500).send(err);
+            }
             if (!isMatch) {
+                console.log('Contraseña incorrecta');
                 return res.status(401).json({ message: 'Contraseña incorrecta' });
             }
 
@@ -86,72 +101,117 @@ app.post('/api/login', loginLimiter, [
                 { expiresIn: '1h' }
             );
 
+            console.log('Login exitoso para usuario:', rut);
             res.json({ message: 'Login exitoso', token, rol: user.rol });
         });
     });
 });
 
+// Ruta para registrar un nuevo usuario
 app.post('/api/usuarios', [
-    body('rut').isLength({ min: 7, max: 12 }).trim().escape(),
-    body('nombre').not().isEmpty().trim().escape(),
-    body('apellido').not().isEmpty().trim().escape(),
-    body('correo_electronico').isEmail().normalizeEmail(),
-    body('rol').isIn(['Estudiante', 'Profesor', 'Administrador']),
-    body('contraseña').isLength({ min: 5 }).escape()
+    body('nombre').notEmpty().withMessage('El nombre es obligatorio.'),
+    body('rut').notEmpty().withMessage('El RUT es obligatorio.'),
+    body('correo_electronico').isEmail().withMessage('El email debe ser válido.'),
+    body('contraseña').isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres.')
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+        console.log('Errores de validación en registro:', errors.array());
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { rut, nombre, apellido, correo_electronico, rol, contraseña } = req.body;
+    const { nombre, rut, correo_electronico, rol, contraseña } = req.body;
 
     try {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(contraseña, salt);
+        const hashedPassword = await bcrypt.hash(contraseña, 10);
 
-        const sql = 'INSERT INTO usuarios (rut, nombre, apellido, correo_electronico, rol, contraseña) VALUES (?, ?, ?, ?, ?, ?)';
-        db.query(sql, [rut, nombre, apellido, correo_electronico, rol, hashedPassword], (err, result) => {
-            if (err) return res.status(500).json({ error: 'Error al registrar el usuario' });
-
-            res.status(201).json({ message: 'Usuario registrado correctamente' });
+        const sql = 'INSERT INTO usuarios (nombre, rut, correo_electronico, rol, contraseña) VALUES (?, ?, ?, ?, ?)';
+        db.query(sql, [nombre, rut, correo_electronico, rol, hashedPassword], (err, result) => {
+            if (err) {
+                console.log('Error al registrar el usuario:', err);
+                return res.status(500).json({ message: 'Error al registrar el usuario.' });
+            }
+            console.log('Usuario registrado con éxito:', nombre);
+            res.status(201).json({ id: result.insertId, nombre, rut, correo_electronico, rol });
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error registrando el usuario' });
+        console.log('Error en el servidor:', error);
+        res.status(500).json({ message: 'Error en el servidor.' });
     }
 });
 
-// Ruta para obtener todos los usuarios (nueva)
-app.get('/api/usuarios', verifyToken, (req, res) => {
+// Ruta para obtener todos los usuarios
+app.get('/api/usuarios', (req, res) => {
     const sql = 'SELECT * FROM usuarios';
     db.query(sql, (err, results) => {
-        if (err) return res.status(500).send(err);
+        if (err) {
+            console.log('Error al cargar los usuarios:', err);
+            return res.status(500).json({ message: 'Error al cargar los usuarios.' });
+        }
+        console.log('Usuarios cargados con éxito');
         res.json(results);
     });
 });
 
+// Ruta para eliminar un usuario
+app.delete('/api/usuarios/:id', (req, res) => {
+    const { id } = req.params;
+    const sql = 'DELETE FROM usuarios WHERE id = ?';
+    db.query(sql, [id], (err, result) => {
+        if (err) {
+            console.log('Error al eliminar el usuario:', err);
+            return res.status(500).json({ message: 'Error al eliminar el usuario.' });
+        }
+        if (result.affectedRows === 0) {
+            console.log('Usuario no encontrado:', id);
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+        console.log('Usuario eliminado con éxito:', id);
+        res.json({ message: 'Usuario eliminado con éxito.' });
+    });
+});
+app.put('/api/usuarios/:id', (req, res) => {
+    const { id } = req.params;
+    const { nombre, rut,correo_electronico, rol, contraseña } = req.body;
+
+    const sql = 'UPDATE usuarios SET nombre = ?, rut = ?, correo_electronico = ?, rol = ?, contraseña = ? WHERE id = ?';
+    db.query(sql, [nombre, rut, correo_electronico, rol, contraseña, id], (err, result) => {
+        if (err) {
+            return res.status(500).json({ message: 'Error al actualizar el usuario.' });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+        res.json({ message: 'Usuario actualizado con éxito.' });
+    });
+});
 // Rutas protegidas según el rol del usuario
 app.get('/api/estudiante', verifyToken, (req, res) => {
     if (req.userRole === 'Estudiante') {
+        console.log('Acceso otorgado a Estudiante:', req.userId);
         res.json({ message: 'Bienvenido Estudiante' });
     } else {
+        console.log('Acceso denegado a Estudiante:', req.userId);
         res.status(403).json({ message: 'No tienes acceso a esta ruta' });
     }
 });
 
 app.get('/api/profesor', verifyToken, (req, res) => {
     if (req.userRole === 'Profesor') {
+        console.log('Acceso otorgado a Profesor:', req.userId);
         res.json({ message: 'Bienvenido Profesor' });
     } else {
+        console.log('Acceso denegado a Profesor:', req.userId);
         res.status(403).json({ message: 'No tienes acceso a esta ruta' });
     }
 });
 
 app.get('/api/administrador', verifyToken, (req, res) => {
     if (req.userRole === 'Administrador') {
+        console.log('Acceso otorgado a Administrador:', req.userId);
         res.json({ message: 'Bienvenido Administrador' });
     } else {
+        console.log('Acceso denegado a Administrador:', req.userId);
         res.status(403).json({ message: 'No tienes acceso a esta ruta' });
     }
 });

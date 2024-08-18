@@ -1,79 +1,141 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import './Registro.css';
 
 function Registro() {
-    const [formData, setFormData] = useState({
-        rut: '',
-        nombre: '',
-        apellido: '',
-        correo_electronico: '',
-        rol: 'Estudiante', // Valor por defecto
-        contraseña: ''
-    });
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
-    const navigate = useNavigate();
+    const [usuarios, setUsuarios] = useState([]);
+    const [nuevoUsuario, setNuevoUsuario] = useState({ nombre: '', rut: '', correo_electronico: '', rol: '', contraseña: '' });
+    const [editingUser, setEditingUser] = useState(null);
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    useEffect(() => {
+        fetchUsuarios();
+    }, []);
+
+    const fetchUsuarios = () => {
+        axios.get('http://localhost:5000/api/usuarios')
+            .then(response => setUsuarios(response.data))
+            .catch(error => console.error('Error al cargar usuarios:', error));
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setNuevoUsuario(prevState => ({
+            ...prevState, 
+            [name]: value
+        }));
+    };
 
-        axios.post('http://localhost:5000/api/usuarios', formData)
-            .then(response => {
-                setSuccess('Usuario registrado correctamente');
-                setError('');
-                setTimeout(() => {
-                    navigate('/'); // Redirigir a la página de login después de un registro exitoso
-                }, 2000);
+    const handleRegisterOrUpdate = () => {
+        if (editingUser) {
+            axios.put(`http://localhost:5000/api/usuarios/${editingUser.id}`, nuevoUsuario)
+                .then(() => {
+                    fetchUsuarios();
+                    setEditingUser(null);
+                    setNuevoUsuario({ nombre: '', rut: '', correo_electronico: '', rol: '', contraseña: '' });
+                    console.log('Usuario actualizado con éxito');
+                })
+                .catch(error => console.error('Error al actualizar usuario:', error));
+        } else {
+            axios.post('http://localhost:5000/api/usuarios', nuevoUsuario)
+                .then(() => {
+                    fetchUsuarios();
+                    setNuevoUsuario({ nombre: '', rut: '', correo_electronico: '', rol: '', contraseña: '' });
+                    console.log('Usuario registrado con éxito');
+                })
+                .catch(error => console.error('Error al registrar usuario:', error));
+        }
+    };
+
+    const handleDelete = (id) => {
+        axios.delete(`http://localhost:5000/api/usuarios/${id}`)
+            .then(() => {
+                fetchUsuarios();
+                console.log('Usuario eliminado con éxito');
             })
-            .catch(error => {
-                console.error('Error al registrar el usuario:', error);
-                setError('Hubo un error al registrar el usuario.');
-                setSuccess('');
-            });
+            .catch(error => console.error('Error al eliminar usuario:', error));
+    };
+
+    const handleEdit = (usuario) => {
+        setEditingUser(usuario);
+        setNuevoUsuario({
+            nombre: usuario.nombre,
+            rut: usuario.rut,
+            correo_electronico: usuario.correo_electronico,
+            rol: usuario.rol,
+            contraseña: '' // Leave blank for security reasons
+        });
     };
 
     return (
         <div className="registro-container">
-            <h2>Registro de Usuario</h2>
-            {error && <p className="error">{error}</p>}
-            {success && <p className="success">{success}</p>}
-            <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                    <label>RUT:</label>
-                    <input type="text" name="rut" value={formData.rut} onChange={handleChange} required />
-                </div>
-                <div className="form-group">
-                    <label>Nombre:</label>
-                    <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} required />
-                </div>
-                <div className="form-group">
-                    <label>Apellido:</label>
-                    <input type="text" name="apellido" value={formData.apellido} onChange={handleChange} required />
-                </div>
-                <div className="form-group">
-                    <label>Correo Electrónico:</label>
-                    <input type="email" name="correo_electronico" value={formData.correo_electronico} onChange={handleChange} required />
-                </div>
-                <div className="form-group">
-                    <label>Rol:</label>
-                    <select name="rol" value={formData.rol} onChange={handleChange}>
-                        <option value="Estudiante">Estudiante</option>
-                        <option value="Profesor">Profesor</option>
-                        <option value="Administrador">Administrador</option>
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label>Contraseña:</label>
-                    <input type="password" name="contraseña" value={formData.contraseña} onChange={handleChange} required />
-                </div>
-                <button type="submit" className="btn">Registrar</button>
-            </form>
+            <h2>{editingUser ? 'Actualizar Usuario' : 'Registrar Nuevo Usuario'}</h2>
+            <input 
+                type="text" 
+                name="nombre" 
+                value={nuevoUsuario.nombre} 
+                onChange={handleChange} 
+                placeholder="Nombre del usuario" 
+            />
+            <input 
+                type="text" 
+                name="rut" 
+                value={nuevoUsuario.rut} 
+                onChange={handleChange} 
+                placeholder="RUT" 
+            />
+            <input 
+                type="email" 
+                name="email" 
+                value={nuevoUsuario.correo_electronico} 
+                onChange={handleChange} 
+                placeholder="Correo Electrónico" 
+            />
+            <input 
+                type="password" 
+                name="contraseña" 
+                value={nuevoUsuario.contraseña} 
+                onChange={handleChange} 
+                placeholder="Contraseña" 
+            />
+            <select 
+                name="rol" 
+                value={nuevoUsuario.rol} 
+                onChange={handleChange}
+            >
+                <option value="">Seleccione un rol</option>
+                <option value="Estudiante">Estudiante</option>
+                <option value="Profesor">Profesor</option>
+                <option value="Administrador">Administrador</option>
+            </select>
+            <button onClick={handleRegisterOrUpdate}>
+                {editingUser ? 'Actualizar Usuario' : 'Registrar Usuario'}
+            </button>
+
+            <h2>Lista de Usuarios</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>RUT</th>
+                        <th>Email</th>
+                        <th>Rol</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {usuarios.map((usuario) => (
+                        <tr key={usuario.id}>
+                            <td>{usuario.nombre}</td>
+                            <td>{usuario.rut}</td>
+                            <td>{usuario.correo_electronico}</td>
+                            <td>{usuario.rol}</td>
+                            <td>
+                                <button onClick={() => handleEdit(usuario)}>Editar</button>
+                                <button onClick={() => handleDelete(usuario.id)}>Eliminar</button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
         </div>
     );
 }
